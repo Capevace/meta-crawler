@@ -22,7 +22,7 @@
       "es2015"
     ]
   },
-  "description": "A small web crawler that fetches the meta data for all the pages of a given website.",
+  "description": "A small web crawler that collects a given site's meta-tag data.",
   "repository": "https://github.com/Capevace/meta-crawler.git",
   "author": "Lukas von Mateffy (@Capevace)"
 }

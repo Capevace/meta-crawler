@@ -15,7 +15,8 @@ class MetaCrawler {
         filepath: path.resolve(process.cwd()),
         blacklist: [],
         required: [],
-        writeFile: false
+        writeFile: false,
+        callback: () => {}
       },
       options
     );
@@ -27,11 +28,10 @@ class MetaCrawler {
   async start() {
     let limitCounter = this.options.limit;
     do {
-      await this.crawlPage(this.newUrls.pop());
-    } while (
-      this.newUrls.length > 0 &&
-      (this.options.limit === -1 || --limitCounter > 0)
-    );
+      const url = this.newUrls.pop();
+      await this.crawlPage(url);
+    } while (this.newUrls.length > 0 &&
+      (this.options.limit === -1 || --limitCounter > 0));
 
     const filename = 'crawl-' + new Date().toISOString() + '.json';
 
@@ -73,10 +73,15 @@ class MetaCrawler {
       const links = $('a[href]:not([href="#"])')
         .toArray()
         .map(link => {
+          let url = link.attribs.href;
+          if (url.indexOf('/') === 0) {
+            url = this.rootUrl + url;
+          }
+
           try {
-            return normalizeUrl(link.attribs.href);
+            return normalizeUrl(url);
           } catch (e) {
-            console.log(`Found invalid link ${link.attribs.href}`);
+            console.log(`Found invalid link ${url}`);
             return '';
           }
         })
@@ -86,10 +91,22 @@ class MetaCrawler {
             link !== '' &&
             !this.newUrls.includes(link) &&
             !this.linkIncludesBlacklisted(link) &&
-            this.linkIncludesRequired(link)
+            link.indexOf(this.rootUrl) === 0
+          // this.linkIncludesRequired(link)
+        )
+        .reduce(
+          (links, link) => !links.includes(link) ? [...links, link] : links,
+          []
         );
 
       this.newUrls = this.newUrls.concat(links);
+
+      this.options.callback({
+        meta: metaForUrl,
+        urls: this.newUrls,
+        linksFound: links
+      });
+
       console.log(`Found ${links.length} new links.`);
       console.log(`${this.newUrls.length} links left to crawl.`);
       console.log(`Finished ${url}`);
@@ -100,19 +117,25 @@ class MetaCrawler {
   }
 
   linkIncludesBlacklisted(link) {
-    return this.options.blacklist.reduce((includesBlacklisted, phrase) => {
-      if (includesBlacklisted) return true;
+    return this.options.blacklist.reduce(
+      (includesBlacklisted, phrase) => {
+        if (includesBlacklisted) return true;
 
-      return link.includes(phrase);
-    }, false);
+        return link.includes(phrase);
+      },
+      false
+    );
   }
 
   linkIncludesRequired(link) {
-    return this.options.required.reduce((missingRequired, phrase) => {
-      if (missingRequired) return true;
+    return this.options.required.reduce(
+      (missingRequired, phrase) => {
+        if (missingRequired) return true;
 
-      return !link.includes(phrase);
-    }, false);
+        return !link.includes(phrase);
+      },
+      false
+    );
   }
 }
 

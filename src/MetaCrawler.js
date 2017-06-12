@@ -16,13 +16,17 @@ class MetaCrawler {
         blacklist: [],
         required: [],
         writeFile: false,
-        callback: () => {}
+        log: true,
+        logErrors: false,
+        callback: () => {},
+        errorCallback: () => {}
       },
       options
     );
     this.meta = {};
     this.errors = [];
     this.newUrls = [rootUrl];
+    this.errorUrls = [];
   }
 
   async start() {
@@ -46,7 +50,8 @@ class MetaCrawler {
 
   async crawlPage(url) {
     try {
-      console.log(`Requesting ${url}`);
+      if (this.options.log) console.log(`Requesting ${url}`);
+
       const result = await request(url);
       const $ = cheerio.load(result);
       const metaForUrl = {};
@@ -81,7 +86,7 @@ class MetaCrawler {
           try {
             return normalizeUrl(url);
           } catch (e) {
-            console.log(`Found invalid link ${url}`);
+            if (this.options.log) console.log(`Found invalid link ${url}`);
             return '';
           }
         })
@@ -91,7 +96,8 @@ class MetaCrawler {
             link !== '' &&
             !this.newUrls.includes(link) &&
             !this.linkIncludesBlacklisted(link) &&
-            link.indexOf(this.rootUrl) === 0
+            link.indexOf(this.rootUrl) === 0 &&
+            !this.errorUrls.includes(link)
           // this.linkIncludesRequired(link)
         )
         .reduce(
@@ -102,17 +108,30 @@ class MetaCrawler {
       this.newUrls = this.newUrls.concat(links);
 
       this.options.callback({
-        meta: metaForUrl,
+        meta: this.meta,
         urls: this.newUrls,
         linksFound: links
       });
 
-      console.log(`Found ${links.length} new links.`);
-      console.log(`${this.newUrls.length} links left to crawl.`);
-      console.log(`Finished ${url}`);
+      if (this.options.log) {
+        console.log(`Found ${links.length} new links.`);
+        console.log(`${this.newUrls.length} links left to crawl.`);
+        console.log(`Finished ${url}`);
+      }
     } catch (e) {
-      console.log('Error occurred', e);
-      this.errors.push(errors);
+      if (this.options.log)
+        console.log(
+          `Error occurred on ${url}`,
+          this.options.logErrors ? e : null
+        );
+
+      this.errorUrls.push(url);
+
+      this.options.errorCallback({
+        error: e,
+        url,
+        errorUrls: this.errorUrls
+      });
     }
   }
 
@@ -128,6 +147,8 @@ class MetaCrawler {
   }
 
   linkIncludesRequired(link) {
+    if (this.options.required.length === 0) return true;
+
     return this.options.required.reduce(
       (missingRequired, phrase) => {
         if (missingRequired) return true;

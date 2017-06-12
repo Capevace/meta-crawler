@@ -7,6 +7,7 @@
     "cheerio": "^0.22.0",
     "mz": "^2.6.0",
     "normalize-url": "^1.9.1",
+    "request": "^2.81.0",
     "request-promise-native": "^1.0.4"
   },
   "devDependencies": {
@@ -15,6 +16,7 @@
   },
   "scripts": {
     "compile": "babel src -d lib",
+    "watch-compile": "babel src -d lib --watch",
     "prepublish": "yarn run compile"
   },
   "babel": {

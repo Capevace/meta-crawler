@@ -1,9 +1,9 @@
 const { crawl } = require('./src');
 
 async function start() {
-  const meta = await crawl('http://smoolabs.com/', {
+  const meta = await crawl('http://gesunde-matratzen.de/', {
     blacklist: ['wp-content', 'wp-uploads', 'wp-admin'],
-    required: ['smoolabs.com'],
+    required: ['gesunde-matratzen.de'],
     writeFile: true
   });
 

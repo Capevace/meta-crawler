@@ -57,7 +57,7 @@ Returns a promise which eventually resolves to the metadata.
   // List of required phrases that have to be in the discovered urls
   required: [],
 
-  // Wether to automatically write a file at the end of the crawl
+  // Whether to automatically write a file at the end of the crawl
   writeFile: false
 }
 ```
